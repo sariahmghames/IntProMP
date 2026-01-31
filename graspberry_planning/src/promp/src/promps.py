@@ -220,34 +220,28 @@ class MAPWeightLearner(): # learn omega parameter by MAP/ML, refer eq 3.28 in se
 
     def __init__(self, proMP, regularizationCoeff=10 ** -9, priorCovariance=10 ** -4, priorWeight=1):
         self.proMP = proMP
-        self.priorCovariance = priorCovariance # sigma omega new
+        self.priorCovariance = priorCovariance  # prior strength
         self.priorWeight = priorWeight
         self.regularizationCoeff = regularizationCoeff
 
     def learnFromData(self, trajectoryList, timeList):
         numTraj = len(trajectoryList)  # number of demos 
-        #print('numTraj=', numTraj)
         weightMatrix = np.zeros((numTraj, self.proMP.numWeights)) # 121 (nb of demos) x (5*3)
         for i in range(numTraj):
             trajectory = trajectoryList[i]  # pick 1 demo will have a shape 162 samples x 3dofs
             time = timeList[i] 
-            #print('trajectory shape=', trajectory.shape)
             trajectoryFlat = trajectory.transpose().reshape(trajectory.shape[0] * trajectory.shape[1]) # trajectory.transpose() = 3x162 , with reshape we get a row of samples among all dofs
-            #print('trajectoryflat=', trajectoryFlat.shape)
-            basisMatrix = self.proMP.basis.basisMultiDoF(time, self.proMP.numDoF)   # can it access basisMultiDoF() ? get the values of basis function at different time instant for multi dofs from single DoF , so matrix phi
+            basisMatrix = self.proMP.basis.basisMultiDoF(time, self.proMP.numDoF)  # get the values of basis function at different time instant for multi dofs from single DoF , so matrix phi
             temp = basisMatrix.transpose().dot(basisMatrix) + np.eye(self.proMP.numWeights) * self.regularizationCoeff # self.proMP.numWeights = basisSingleDoF.shape[0] * numDOF
-            #print('basis 1 demo=',basisMatrix.shape)
             weightVector = np.linalg.solve(temp, basisMatrix.transpose().dot(trajectoryFlat))
             weightMatrix[i, :] = weightVector
 
-        self.proMP.mu = np.mean(weightMatrix, axis=0) # mean of weights from prior , along rows
-        #print('weights of learnt ProMP=', weightMatrix)
-        #print('mean of learnt ProMP=', self.proMP.mu)
+        self.proMP.mu = np.mean(weightMatrix, axis=0) # mean of weights 
         all_zeros = not np.any(weightMatrix)
         print('all zeros=', all_zeros)
         sampleCov = np.cov(weightMatrix.transpose())
         self.proMP.covMat = (numTraj * sampleCov + self.priorCovariance * np.eye(self.proMP.numWeights)) / (
-                    numTraj + self.priorCovariance) # cov of weight matrix, from prior .. ?
+                    numTraj + self.priorCovariance) # wishart prior
         
         ## Trial Sariah to get here the mean of the learnt proMP
         # print('weight matrix =', weightMatrix.shape)
