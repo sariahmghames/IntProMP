@@ -174,8 +174,8 @@ print('len(goal)=', len(goal))
 
 # Conditioning at 1st goal point ( same performance if cond at tf comes at end)
 
-for i in range(0,len(goal)):  # len(goal)
-  mu_x_tf = goal[i] #goal[i]
+for i in range(0,len(goal)): 
+  mu_x_tf = goal[i] 
   sig_x_tf = np.eye(3) * 0.0
   print('mu_x_tf=', mu_x_tf)
   #### cond at t0
